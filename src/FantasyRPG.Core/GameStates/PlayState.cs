@@ -57,8 +57,17 @@ public sealed class PlayState : IGameState
     private BotBrain _botBrain;
     private bool _botEnabled;
 
+    // ── Round Over ───────────────────────────────────────────────────
+    private bool _roundOver;
+    private int _winnerIndex;         // 0 = player won, 1 = opponent won
+
+    // ── Countdown ────────────────────────────────────────────────────
+    private const int CountdownTotalFrames = 180; // 3 seconds at 60fps
+    private int _countdownFrames;
+
     // ── Dependencies ─────────────────────────────────────────────────
     private readonly InputManager _input;
+    private GameStateManager? _stateManager;
 
     // ── Target rendered height (pixels on virtual canvas) ──────────────
     private const float TargetRenderHeight = 45f;
@@ -128,6 +137,11 @@ public sealed class PlayState : IGameState
         _botEnabled = enabled;
     }
 
+    public void SetStateManager(GameStateManager stateManager)
+    {
+        _stateManager = stateManager;
+    }
+
     // ═══════════════════════════════════════════════════════════════════
     //  ENTER — Spawn entities, configure stage
     // ═══════════════════════════════════════════════════════════════════
@@ -140,6 +154,15 @@ public sealed class PlayState : IGameState
 
         PhysicsSystem.SetPlatforms(_platforms, _platformCount);
 
+        // ── Reset round state ───────────────────────────────────────
+        _roundOver = false;
+        _winnerIndex = -1;
+        _countdownFrames = CountdownTotalFrames;
+
+        // ── Disable debug overlays by default ───────────────────────
+        DebugDrawSystem.Enabled = false;
+        DebugStateLogger.Enabled = false;
+
         // ── Initialize bot AI ───────────────────────────────────────
         _botBrain = BotBrain.Create(42u);
 
@@ -147,8 +170,8 @@ public sealed class PlayState : IGameState
         if (_playerCharacter == 0)
         {
             // Player = Knight, Opponent = Wizard
-            SpawnKnight(PlayerIndex, new Vector2(160f, 222f), 1);
-            SpawnWizard(DummyIndex, new Vector2(210f, 222f), -1);
+            SpawnKnight(PlayerIndex, new Vector2(120f, 222f), 1);
+            SpawnWizard(DummyIndex, new Vector2(360f, 222f), -1);
             CombatSystem.ConfigureDash(
                 KnightData.DashStartupFrames,
                 KnightData.DashActiveFrames,
@@ -157,8 +180,8 @@ public sealed class PlayState : IGameState
         else
         {
             // Player = Wizard, Opponent = Knight
-            SpawnWizard(PlayerIndex, new Vector2(160f, 222f), 1);
-            SpawnKnight(DummyIndex, new Vector2(210f, 222f), -1);
+            SpawnWizard(PlayerIndex, new Vector2(120f, 222f), 1);
+            SpawnKnight(DummyIndex, new Vector2(360f, 222f), -1);
             CombatSystem.ConfigureDash(
                 WizardData.DashStartupFrames,
                 WizardData.DashActiveFrames,
@@ -274,6 +297,25 @@ public sealed class PlayState : IGameState
     // ═══════════════════════════════════════════════════════════════════
     public void Update(GameTime gameTime)
     {
+        // ╔═══════════════════════════════════════════════════════════╗
+        // ║  ROUND OVER — freeze gameplay, wait for Space to restart ║
+        // ╚═══════════════════════════════════════════════════════════╝
+        if (_roundOver)
+        {
+            if (_input.IsKeyPressed(Keys.Space))
+                _stateManager?.ChangeState(GameStateId.CharacterSelect);
+            return;
+        }
+
+        // ╔═══════════════════════════════════════════════════════════╗
+        // ║  COUNTDOWN — freeze gameplay, tick down to 0             ║
+        // ╚═══════════════════════════════════════════════════════════╝
+        if (_countdownFrames > 0)
+        {
+            _countdownFrames--;
+            return;
+        }
+
         float dt = (float)gameTime.ElapsedGameTime.TotalSeconds;
 
         // ╔═══════════════════════════════════════════════════════════╗
@@ -327,10 +369,10 @@ public sealed class PlayState : IGameState
             _combats.AsSpan(), EntityCount, dt);
 
         // ╔═══════════════════════════════════════════════════════════╗
-        // ║  PHASE 6: HOUSEKEEPING                                   ║
+        // ║  PHASE 6: HOUSEKEEPING — check for round winner          ║
         // ╚═══════════════════════════════════════════════════════════╝
         UpdateFacing();
-        ResetDummyIfDead();
+        CheckRoundOver();
 
         // ╔═══════════════════════════════════════════════════════════╗
         // ║  PHASE 7: DEBUG LOGGING (state transitions to console)    ║
@@ -382,6 +424,12 @@ public sealed class PlayState : IGameState
             spriteBatch,
             _combats.AsSpan(), _healths.AsSpan(),
             EntityCount);
+
+        // Draw countdown or round-over overlay
+        if (_countdownFrames > 0)
+            DrawCountdown(spriteBatch);
+        else if (_roundOver)
+            DrawRoundOverOverlay(spriteBatch);
     }
 
     public void Exit() { }
@@ -517,15 +565,19 @@ public sealed class PlayState : IGameState
         dummyCombat.FacingDirection = diff >= 0f ? 1 : -1;
     }
 
-    private void ResetDummyIfDead()
+    private void CheckRoundOver()
     {
-        ref HealthComponent dummyHealth = ref _healths[DummyIndex];
-        if (dummyHealth.IsDead)
+        if (_roundOver) return;
+
+        for (int i = 0; i < EntityCount; i++)
         {
-            dummyHealth.Current = dummyHealth.Max;
-            _combats[DummyIndex].TransitionTo(FighterStateId.Idle);
-            _transforms[DummyIndex].Position = new Vector2(210f, 222f);
-            _transforms[DummyIndex].Velocity = Vector2.Zero;
+            if (_healths[i].IsDead)
+            {
+                _roundOver = true;
+                // The winner is the OTHER entity
+                _winnerIndex = i == PlayerIndex ? DummyIndex : PlayerIndex;
+                return;
+            }
         }
     }
 
@@ -626,26 +678,56 @@ public sealed class PlayState : IGameState
 
     private void DrawHealthBars(SpriteBatch spriteBatch)
     {
+        const int barWidth = 180;
+        const int barHeight = 8;
+        const int barY = 8;
+        const int barMargin = 16;
+
         for (int i = 0; i < EntityCount; i++)
         {
-            ref readonly TransformComponent t = ref _transforms[i];
             ref readonly HealthComponent h = ref _healths[i];
 
-            const int barWidth = 24;
-            const int barHeight = 3;
-            int barX = (int)t.Position.X - barWidth / 2;
-            int barY = (int)(t.Position.Y - 50);
+            // Player bar: left-aligned, grows left-to-right
+            // Opponent bar: right-aligned, grows right-to-left
+            int barX = i == PlayerIndex
+                ? barMargin
+                : GameSettings.VirtualWidth - barMargin - barWidth;
 
+            // Background
             DebugDrawSystem.DrawFilledRect(spriteBatch,
                 barX, barY, barWidth, barHeight, new Color(40, 10, 10));
 
+            // Fill
             int fillWidth = (int)(barWidth * h.Percentage);
-            Color fillColor = h.Percentage > 0.5f ? Color.Lime : Color.Red;
+            Color fillColor = h.Percentage > 0.5f ? Color.Lime
+                            : h.Percentage > 0.25f ? Color.Yellow
+                            : Color.Red;
+
             if (fillWidth > 0)
             {
+                // Player fills left→right, opponent fills right→left
+                int fillX = i == PlayerIndex
+                    ? barX
+                    : barX + barWidth - fillWidth;
+
                 DebugDrawSystem.DrawFilledRect(spriteBatch,
-                    barX, barY, fillWidth, barHeight, fillColor);
+                    fillX, barY, fillWidth, barHeight, fillColor);
             }
+
+            // Border
+            DebugDrawSystem.DrawHollowRect(spriteBatch,
+                barX, barY, barWidth, barHeight, Color.White, 1);
+        }
+
+        // Center divider label
+        var font = DebugDrawSystem.Font;
+        if (font is not null)
+        {
+            const string vs = "VS";
+            var vsSize = font.MeasureString(vs);
+            spriteBatch.DrawString(font, vs,
+                new Vector2(GameSettings.VirtualWidth / 2f - vsSize.X / 2f, barY),
+                Color.White);
         }
     }
 
@@ -684,5 +766,60 @@ public sealed class PlayState : IGameState
 
             DebugDrawSystem.DrawFilledRect(spriteBatch, x, y, 24, 2, stateColor);
         }
+    }
+
+    private void DrawCountdown(SpriteBatch spriteBatch)
+    {
+        var font = DebugDrawSystem.Font;
+        if (font is null) return;
+
+        int centerX = GameSettings.VirtualWidth / 2;
+        int centerY = GameSettings.VirtualHeight / 2;
+
+        // 180-121 frames = "3", 120-61 = "2", 60-1 = "1"
+        int secondsLeft = (_countdownFrames - 1) / 60 + 1;
+        string text = secondsLeft.ToString();
+
+        float scale = 4.0f;
+        var textSize = font.MeasureString(text) * scale;
+        Color color = secondsLeft switch
+        {
+            3 => Color.Red,
+            2 => Color.Yellow,
+            _ => Color.Lime
+        };
+
+        spriteBatch.DrawString(font, text,
+            new Vector2(centerX - textSize.X / 2f, centerY - textSize.Y / 2f - 20f),
+            color, 0f, Vector2.Zero, scale, SpriteEffects.None, 0f);
+    }
+
+    private void DrawRoundOverOverlay(SpriteBatch spriteBatch)
+    {
+        // Semi-transparent dark overlay
+        DebugDrawSystem.DrawFilledRect(spriteBatch,
+            0, 80, GameSettings.VirtualWidth, 110, new Color(0, 0, 0, 180));
+
+        var font = DebugDrawSystem.Font;
+        if (font is null) return;
+
+        int centerX = GameSettings.VirtualWidth / 2;
+
+        // Winner text
+        bool playerWon = _winnerIndex == PlayerIndex;
+        string winText = playerWon ? "YOU WIN!" : "YOU LOSE!";
+        Color winColor = playerWon ? Color.Gold : Color.Red;
+        const float winScale = 3.0f;
+        var winSize = font.MeasureString(winText) * winScale;
+        spriteBatch.DrawString(font, winText,
+            new Vector2(centerX - winSize.X / 2f, 100f),
+            winColor, 0f, Vector2.Zero, winScale, SpriteEffects.None, 0f);
+
+        // Prompt
+        const string prompt = "SPACE: RESTART";
+        var promptSize = font.MeasureString(prompt);
+        spriteBatch.DrawString(font, prompt,
+            new Vector2(centerX - promptSize.X / 2f, 155f),
+            Color.White);
     }
 }

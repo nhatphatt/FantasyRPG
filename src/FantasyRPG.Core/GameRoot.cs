@@ -81,24 +81,32 @@ public sealed class GameRoot : Game
         // Initialize debug draw system (creates 1×1 pixel texture)
         DebugDrawSystem.Initialize(GraphicsDevice);
 
-        // Load debug SpriteFont for on-screen text labels
-        DebugDrawSystem.LoadFont(Content.Load<SpriteFont>("Arial"));
+        // Load pixel art SpriteFont for all text rendering
+        DebugDrawSystem.LoadFont(Content.Load<SpriteFont>("PixelFont"));
 
         // Compute initial letterboxed destination
         RecalculateDestinationRect();
 
         // ── Register all game states (pre-allocated, zero future allocs) ──
         var playState = new PlayState(_inputManager, Content);
+        playState.SetStateManager(_gameStateManager);
 
         _gameStateManager.RegisterState(GameStateId.Gameplay, playState);
 
         _gameStateManager.RegisterState(GameStateId.CharacterSelect,
             new CharacterSelectState(
                 _inputManager, _gameStateManager, playState,
+                Content.Load<Texture2D>("char_select_bg"),
                 playState.KnightTexture, playState.KnightFrameW, playState.KnightFrameH,
                 playState.WizardTexture, playState.WizardFrameW, playState.WizardFrameH));
 
-        _gameStateManager.ChangeState(GameStateId.CharacterSelect);
+        _gameStateManager.RegisterState(GameStateId.MainMenu,
+            new MainMenuState(
+                _inputManager, _gameStateManager,
+                Content.Load<Texture2D>("menu_bg"),
+                Exit));
+
+        _gameStateManager.ChangeState(GameStateId.MainMenu);
     }
 
     // ═══════════════════════════════════════════════════════════════════
