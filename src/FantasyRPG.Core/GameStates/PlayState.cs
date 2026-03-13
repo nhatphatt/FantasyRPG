@@ -53,6 +53,10 @@ public sealed class PlayState : IGameState
     private readonly FrameData[][] _moveSets = new FrameData[EntityCount][];
     private readonly HitboxDefinition[][] _hitboxDefs = new HitboxDefinition[EntityCount][];
 
+    // ── Bot AI ──────────────────────────────────────────────────────
+    private BotBrain _botBrain;
+    private bool _botEnabled;
+
     // ── Dependencies ─────────────────────────────────────────────────
     private readonly InputManager _input;
 
@@ -115,6 +119,15 @@ public sealed class PlayState : IGameState
         _playerCharacter = characterIndex;
     }
 
+    /// <summary>
+    /// Enable or disable bot AI for the opponent entity.
+    /// Called by CharacterSelectState or ModeSelectState before transitioning.
+    /// </summary>
+    public void SetBotEnabled(bool enabled)
+    {
+        _botEnabled = enabled;
+    }
+
     // ═══════════════════════════════════════════════════════════════════
     //  ENTER — Spawn entities, configure stage
     // ═══════════════════════════════════════════════════════════════════
@@ -126,6 +139,9 @@ public sealed class PlayState : IGameState
         _platformCount = 1;
 
         PhysicsSystem.SetPlatforms(_platforms, _platformCount);
+
+        // ── Initialize bot AI ───────────────────────────────────────
+        _botBrain = BotBrain.Create(42u);
 
         // ── Spawn based on character selection ──────────────────────
         if (_playerCharacter == 0)
@@ -283,6 +299,11 @@ public sealed class PlayState : IGameState
         // ╚═══════════════════════════════════════════════════════════╝
         ProcessPlayerInput();
         ConsumeBufferedActions();
+        if (_botEnabled)
+        {
+            UpdateBot();
+            ConsumeBotActions();
+        }
 
         // ╔═══════════════════════════════════════════════════════════╗
         // ║  PHASE 4: COMBAT (frame advance → hitbox → resolve)      ║
@@ -505,6 +526,101 @@ public sealed class PlayState : IGameState
             _combats[DummyIndex].TransitionTo(FighterStateId.Idle);
             _transforms[DummyIndex].Position = new Vector2(210f, 222f);
             _transforms[DummyIndex].Velocity = Vector2.Zero;
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    //  BOT AI — Drives DummyIndex via InputBufferComponent
+    // ═══════════════════════════════════════════════════════════════════
+
+    private void UpdateBot()
+    {
+        _botBrain.Update(
+            ref _inputBuffers[DummyIndex],
+            in _combats[DummyIndex],
+            in _transforms[DummyIndex],
+            in _combats[PlayerIndex],
+            in _transforms[PlayerIndex],
+            _moveSets[DummyIndex],
+            in _physics[DummyIndex]);
+    }
+
+    private void ConsumeBotActions()
+    {
+        ref CombatComponent combat = ref _combats[DummyIndex];
+        ref TransformComponent transform = ref _transforms[DummyIndex];
+        ref PhysicsComponent phys = ref _physics[DummyIndex];
+        ref InputBufferComponent buffer = ref _inputBuffers[DummyIndex];
+
+        // ── Release block when bot doesn't want it ──────────────────
+        if (combat.State == FighterStateId.Blocking && !_botBrain.WantsBlock())
+        {
+            combat.TransitionTo(FighterStateId.Idle);
+        }
+
+        // ── Movement (continuous, driven by BotBrain) ───────────────
+        bool isActionable = combat.State == FighterStateId.Idle
+                         || combat.State == FighterStateId.Run;
+
+        if (isActionable)
+        {
+            int moveDir = _botBrain.GetMoveDirection();
+            if (moveDir != 0)
+            {
+                transform.Velocity.X = moveDir * phys.MoveSpeed;
+                combat.FacingDirection = moveDir > 0 ? 1 : -1;
+                if (combat.State == FighterStateId.Idle)
+                    combat.State = FighterStateId.Run;
+            }
+            else if (combat.State == FighterStateId.Run)
+            {
+                combat.TransitionTo(FighterStateId.Idle);
+            }
+        }
+
+        // ── Aerial drift ────────────────────────────────────────────
+        if (combat.State == FighterStateId.Airborne)
+        {
+            int moveDir = _botBrain.GetMoveDirection();
+            if (moveDir != 0)
+            {
+                transform.Velocity.X = moveDir * phys.MoveSpeed * 0.7f;
+                combat.FacingDirection = moveDir > 0 ? 1 : -1;
+            }
+        }
+
+        // ── Buffered Actions ────────────────────────────────────────
+        bool canAct = combat.State == FighterStateId.Idle
+                   || combat.State == FighterStateId.Run;
+
+        if (canAct)
+        {
+            if (buffer.ConsumeAction(InputAction.Jump))
+            {
+                if (transform.IsGrounded)
+                {
+                    transform.Velocity.Y = phys.JumpForce;
+                    transform.IsGrounded = false;
+                    combat.TransitionTo(FighterStateId.Airborne);
+                }
+            }
+            else if (buffer.ConsumeAction(InputAction.Attack))
+            {
+                combat.BeginAttack(0, in _moveSets[DummyIndex][0]);
+            }
+            else if (buffer.ConsumeAction(InputAction.Special))
+            {
+                combat.BeginAttack(1, in _moveSets[DummyIndex][1]);
+            }
+            else if (buffer.ConsumeAction(InputAction.Block))
+            {
+                combat.BeginParry(combat.ParryWindowFrames);
+            }
+            else if (buffer.ConsumeAction(InputAction.Dash))
+            {
+                combat.TransitionTo(FighterStateId.DashStartup);
+                transform.Velocity.X = combat.FacingDirection * phys.DashSpeed;
+            }
         }
     }
 

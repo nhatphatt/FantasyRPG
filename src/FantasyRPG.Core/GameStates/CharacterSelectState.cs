@@ -24,7 +24,8 @@ public sealed class CharacterSelectState : IGameState
     private readonly int _wizardFrameW;
     private readonly int _wizardFrameH;
 
-    private int _selectedIndex; // 0 = Knight, 1 = Wizard
+    private int _selectedIndex;  // 0 = Knight, 1 = Wizard
+    private int _modeIndex;      // 0 = Dummy, 1 = Bot
 
     public CharacterSelectState(
         InputManager input,
@@ -47,18 +48,27 @@ public sealed class CharacterSelectState : IGameState
     public void Enter()
     {
         _selectedIndex = 0;
+        _modeIndex = 1; // Default to Bot mode
     }
 
     public void Update(GameTime gameTime)
     {
+        // ── Character selection (Left/Right or D1/D2) ───────────────
         if (_input.IsKeyPressed(Keys.Left) || _input.IsKeyPressed(Keys.D1))
             _selectedIndex = 0;
         else if (_input.IsKeyPressed(Keys.Right) || _input.IsKeyPressed(Keys.D2))
             _selectedIndex = 1;
 
+        // ── Mode toggle (Up/Down or D3/D4) ──────────────────────────
+        if (_input.IsKeyPressed(Keys.Up) || _input.IsKeyPressed(Keys.D3))
+            _modeIndex = 0;
+        else if (_input.IsKeyPressed(Keys.Down) || _input.IsKeyPressed(Keys.D4))
+            _modeIndex = 1;
+
         if (_input.IsKeyPressed(Keys.Space))
         {
             _playState.SetPlayerCharacter(_selectedIndex);
+            _playState.SetBotEnabled(_modeIndex == 1);
             _stateManager.ChangeState(GameStateId.Gameplay);
         }
     }
@@ -118,6 +128,15 @@ public sealed class CharacterSelectState : IGameState
         int boxH = 80;
         DebugDrawSystem.DrawHollowRect(spriteBatch,
             selX - boxW / 2, slotY - boxH, boxW, boxH, Color.Yellow, 2);
+
+        // Mode selector (above prompt)
+        string modeText = _modeIndex == 0 ? "3: DUMMY" : "4: BOT";
+        float modeScale = 0.7f;
+        var modeSize = font.MeasureString(modeText) * modeScale;
+        Color modeColor = _modeIndex == 1 ? Color.OrangeRed : Color.Gray;
+        spriteBatch.DrawString(font, modeText,
+            new Vector2(centerX - modeSize.X / 2f, GameSettings.VirtualHeight - 50f),
+            modeColor, 0f, Vector2.Zero, modeScale, SpriteEffects.None, 0f);
 
         // Prompt at bottom
         const string prompt = "SPACE: SELECT";
