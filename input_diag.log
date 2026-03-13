@@ -1,0 +1,130 @@
+[F1] TICK state=Idle grounded=True
+[F60] AUTO-JAB fired! state=AttackStartup
+[F61] TICK state=AttackStartup grounded=True
+[F121] TICK state=Idle grounded=True
+[F180] AUTO-JAB fired! state=AttackStartup
+[F181] TICK state=AttackStartup grounded=True
+[F241] TICK state=Idle grounded=True
+[F300] AUTO-JAB fired! state=AttackStartup
+[F301] TICK state=AttackStartup grounded=True
+[F361] TICK state=Idle grounded=True
+[F420] AUTO-JAB fired! state=AttackStartup
+[F421] TICK state=AttackStartup grounded=True
+[F481] TICK state=Idle grounded=True
+[F540] AUTO-JAB fired! state=AttackStartup
+[F541] TICK state=AttackStartup grounded=True
+[F601] TICK state=Idle grounded=True
+[F660] AUTO-JAB fired! state=AttackStartup
+[F661] TICK state=AttackStartup grounded=True
+[F721] TICK state=Idle grounded=True
+[F780] AUTO-JAB fired! state=AttackStartup
+[F781] TICK state=AttackStartup grounded=True
+[F841] TICK state=Idle grounded=True
+[F900] AUTO-JAB fired! state=AttackStartup
+[F901] TICK state=AttackStartup grounded=True
+[F961] TICK state=Idle grounded=True
+[F1020] AUTO-JAB fired! state=AttackStartup
+[F1021] TICK state=AttackStartup grounded=True
+[F1081] TICK state=Idle grounded=True
+[F1140] AUTO-JAB fired! state=AttackStartup
+[F1141] TICK state=AttackStartup grounded=True
+[F1201] TICK state=Idle grounded=True
+[F1260] AUTO-JAB fired! state=AttackStartup
+[F1261] TICK state=AttackStartup grounded=True
+[F1321] TICK state=Idle grounded=True
+[F1380] AUTO-JAB fired! state=AttackStartup
+[F1381] TICK state=AttackStartup grounded=True
+[F1441] TICK state=Idle grounded=True
+[F1500] AUTO-JAB fired! state=AttackStartup
+[F1501] TICK state=AttackStartup grounded=True
+[F1561] TICK state=Idle grounded=True
+[F1620] AUTO-JAB fired! state=AttackStartup
+[F1621] TICK state=AttackStartup grounded=True
+[F1681] TICK state=Idle grounded=True
+[F1740] AUTO-JAB fired! state=AttackStartup
+[F1741] TICK state=AttackStartup grounded=True
+[F1764] Arrow key pressed!
+[F1801] TICK state=Run grounded=True
+[F1860] AUTO-JAB fired! state=AttackStartup
+[F1861] TICK state=AttackStartup grounded=True
+[F1867] Arrow key pressed!
+[F1896] Arrow key pressed!
+[F1921] TICK state=Run grounded=True
+[F1933] Arrow key pressed!
+[F1968] Arrow key pressed!
+[F1974] Space pressed!
+[F1974] KEY action=Jump state=Run
+[F1981] TICK state=Airborne grounded=False
+[F2000] Arrow key pressed!
+[F2024] Space pressed!
+[F2024] KEY action=Jump state=Run
+[F2039] Arrow key pressed!
+[F2041] TICK state=Airborne grounded=False
+[F2076] Space pressed!
+[F2076] KEY action=Jump state=Run
+[F2089] Arrow key pressed!
+[F2101] TICK state=Airborne grounded=False
+[F2106] Arrow key pressed!
+[F2123] Space pressed!
+[F2123] KEY action=Jump state=Run
+[F2138] Arrow key pressed!
+[F2161] TICK state=Run grounded=True
+[F2167] Space pressed!
+[F2167] KEY action=Jump state=Run
+[F2198] Space pressed!
+[F2198] KEY action=Jump state=Airborne
+[F2221] TICK state=Airborne grounded=False
+[F2233] Space pressed!
+[F2233] KEY action=Jump state=Airborne
+[F2268] Space pressed!
+[F2268] KEY action=Jump state=Airborne
+[F2281] TICK state=Airborne grounded=False
+[F2301] Space pressed!
+[F2301] KEY action=Jump state=Airborne
+[F2322] Arrow key pressed!
+[F2340] AUTO-JAB fired! state=AttackStartup
+[F2341] TICK state=AttackStartup grounded=True
+[F2353] Space pressed!
+[F2353] KEY action=Jump state=AttackRecovery
+[F2385] Space pressed!
+[F2385] KEY action=Jump state=Airborne
+[F2401] TICK state=Airborne grounded=False
+[F2421] Space pressed!
+[F2421] KEY action=Jump state=Airborne
+[F2454] Space pressed!
+[F2454] KEY action=Jump state=Airborne
+[F2460] AUTO-JAB fired! state=AttackStartup
+[F2461] TICK state=AttackStartup grounded=True
+[F2487] Space pressed!
+[F2487] KEY action=Jump state=Run
+[F2521] TICK state=Idle grounded=True
+[F2527] Space pressed!
+[F2527] KEY action=Jump state=Run
+[F2558] Space pressed!
+[F2558] KEY action=Jump state=Airborne
+[F2577] Arrow key pressed!
+[F2581] TICK state=Airborne grounded=False
+[F2602] Space pressed!
+[F2602] KEY action=Jump state=Run
+[F2633] Space pressed!
+[F2633] KEY action=Jump state=Airborne
+[F2641] TICK state=Airborne grounded=False
+[F2664] Space pressed!
+[F2664] KEY action=Jump state=Airborne
+[F2699] Space pressed!
+[F2699] KEY action=Jump state=Airborne
+[F2701] TICK state=Airborne grounded=False
+[F2732] Space pressed!
+[F2732] KEY action=Jump state=Airborne
+[F2761] TICK state=Airborne grounded=False
+[F2765] Arrow key pressed!
+[F2781] Space pressed!
+[F2781] KEY action=Jump state=Run
+[F2809] Space pressed!
+[F2809] KEY action=Jump state=Airborne
+[F2821] TICK state=Airborne grounded=False
+[F2841] Space pressed!
+[F2841] KEY action=Jump state=Airborne
+[F2874] Space pressed!
+[F2874] KEY action=Jump state=Run
+[F2881] TICK state=Airborne grounded=False
