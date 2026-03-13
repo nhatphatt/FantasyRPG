@@ -18,6 +18,9 @@ src/FantasyRPG.DesktopGL/Content/obj/
 .vscode/
 *.sln.docstates
 
+## Publish build output
+publish/win-x64/
+
 ## OS
 Thumbs.db
 .DS_Store
