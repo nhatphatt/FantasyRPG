@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>FantasyRPG.Core</RootNamespace>
+    <AssemblyName>FantasyRPG.Core</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MonoGame.Framework.DesktopGL" Version="3.8.2.1105" />
+    <!--
+      NOTE: The Core project references DesktopGL for compilation.
+      Platform projects override the actual runtime framework.
+      For a truly platform-agnostic Core, consider using
+      MonoGame.Framework.Content.Pipeline.Targeting or conditional refs.
+      This is the pragmatic approach for small teams.
+    -->
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Text.Json" Version="8.0.5" />
+  </ItemGroup>
+
+</Project>

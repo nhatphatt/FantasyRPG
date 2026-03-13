@@ -1,0 +1,23 @@
+## .NET / MonoGame
+bin/
+obj/
+*.user
+*.suo
+*.cache
+*.dll
+*.exe
+*.pdb
+*.xnb
+
+## MGCB intermediate/output
+src/FantasyRPG.DesktopGL/Content/bin/
+src/FantasyRPG.DesktopGL/Content/obj/
+
+## IDE
+.vs/
+.vscode/
+*.sln.docstates
+
+## OS
+Thumbs.db
+.DS_Store
